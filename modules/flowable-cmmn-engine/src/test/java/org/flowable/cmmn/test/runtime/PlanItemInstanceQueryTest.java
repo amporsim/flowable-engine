@@ -580,6 +580,22 @@ public class PlanItemInstanceQueryTest extends FlowableCmmnTestCase {
         assertThat(cmmnRuntimeService.createPlanItemInstanceQuery().includeEnded().planItemInstanceEndedAfter(new Date(now.getTime() - 1000)).list()).hasSize(2);
     }
 
+    @Test
+    @CmmnDeployment
+    public void testStagesOnly() {
+        Date now = new Date();
+        setClockTo(now);
+        cmmnRuntimeService.createCaseInstanceBuilder().caseDefinitionKey("testStagesOnly").start();
+
+        CaseInstance testStagesOnly = cmmnRuntimeService.createCaseInstanceQuery()
+            .caseDefinitionKey("testStagesOnly")
+            .singleResult();
+        assertThat(testStagesOnly).isNotNull();
+
+        assertThat(cmmnRuntimeService.createPlanItemInstanceQuery().caseInstanceId(testStagesOnly.getId()).planItemDefinitionType("stage").count()).isEqualTo(3);
+        assertThat(cmmnRuntimeService.createPlanItemInstanceQuery().caseInstanceId(testStagesOnly.getId()).onlyStages().count()).isEqualTo(3);
+    }
+
 
     private List<String> startInstances(int numberOfInstances) {
         List<String> caseInstanceIds = new ArrayList<>();
