@@ -22,6 +22,7 @@ import org.flowable.cmmn.api.CmmnTaskService;
 import org.flowable.cmmn.engine.CmmnEngineConfiguration;
 import org.flowable.cmmn.engine.test.impl.CmmnTestRunner;
 import org.flowable.common.engine.impl.interceptor.EngineConfigurationConstants;
+import org.flowable.engine.DynamicBpmnService;
 import org.flowable.engine.HistoryService;
 import org.flowable.engine.ManagementService;
 import org.flowable.engine.ProcessEngine;
@@ -57,6 +58,8 @@ public abstract class AbstractProcessEngineIntegrationTest {
     protected TaskService processEngineTaskService;
     protected ProcessEngineConfiguration processEngineConfiguration;
 
+    protected DynamicBpmnService dynamicBpmnService;
+
     @BeforeClass
     public static void bootProcessEngine() {
         if (processEngine == null) {
@@ -81,6 +84,8 @@ public abstract class AbstractProcessEngineIntegrationTest {
         this.processEngineTaskService = processEngine.getTaskService();
         this.processEngineHistoryService = processEngine.getHistoryService();
         this.processEngineConfiguration = processEngine.getProcessEngineConfiguration();
+
+        this.dynamicBpmnService = processEngine.getDynamicBpmnService();
     }
 
     @After
