@@ -13,6 +13,7 @@
 package org.flowable.cmmn.test;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Java6Assertions.tuple;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -25,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.assertj.core.api.Assertions;
 import org.flowable.cmmn.api.CallbackTypes;
 import org.flowable.cmmn.api.history.HistoricMilestoneInstance;
 import org.flowable.cmmn.api.repository.CaseDefinitionQuery;
@@ -810,5 +812,44 @@ public class ProcessTaskTest extends AbstractProcessEngineIntegrationTest {
             .isExactlyInstanceOf(FlowableException.class)
             .hasMessageContaining("The task cannot be deleted")
             .hasMessageContaining("running process");
+    }
+
+    @Test
+    @CmmnDeployment
+    public void testChangeActiveStagesWithProcessTasks() {
+
+        Deployment deployment = this.processEngineRepositoryService.createDeployment().
+            addClasspathResource("org/flowable/cmmn/test/emptyProcess.bpmn20.xml").
+            deploy();
+
+        try {
+            CaseInstance caseInstance = cmmnRuntimeService.createCaseInstanceBuilder().caseDefinitionKey("activatePlanItemTest").start();
+
+            Assertions.assertThat(cmmnRuntimeService.createPlanItemInstanceQuery().caseInstanceId(caseInstance.getId()).list())
+                .extracting(PlanItemInstance::getPlanItemDefinitionId, PlanItemInstance::getState)
+                .containsExactlyInAnyOrder(
+                    tuple("oneexpandedstage1", "active"),
+                    tuple("oneexpandedstage2", "available"),
+                    tuple("oneexpandedstage1", "wait_repetition"),
+                    tuple("oneprocesstask2", "enabled"),
+                    tuple("oneprocesstask4", "enabled")
+                );
+
+            cmmnRuntimeService.createChangePlanItemStateBuilder()
+                .caseInstanceId(caseInstance.getId())
+                .changePlanItemInstanceToAvailableByPlanItemDefinitionId("oneexpandedstage1")
+                //.movePlanItemDefinitionIdTo("oneexpandedstage1", "oneexpandedstage2")
+                .changeState();
+
+            Assertions.assertThat(cmmnRuntimeService.createPlanItemInstanceQuery().caseInstanceId(caseInstance.getId()).list())
+                .extracting(PlanItemInstance::getPlanItemDefinitionId, PlanItemInstance::getState)
+                .containsExactlyInAnyOrder(
+                    tuple("oneexpandedstage1", "available"),
+                    tuple("oneexpandedstage2", "available")
+                );
+
+        } finally {
+            processEngineRepositoryService.deleteDeployment(deployment.getId(), true);
+        }
     }
 }
